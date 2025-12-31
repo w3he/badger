@@ -110,6 +110,58 @@ def find_connect_four(player):
     return None
 
 
+def find_open_three(player):
+    for row in range(ROWS):
+        for col in range(COLS):
+            if board[row][col] != player:
+                continue
+            for dx, dy in DIRECTIONS:
+                cells = []
+                for step in range(4):
+                    r = row + dy * step
+                    c = col + dx * step
+                    if 0 <= r < ROWS and 0 <= c < COLS and board[r][c] == player:
+                        cells.append((r, c))
+                    else:
+                        break
+                if len(cells) == 3:
+                    return is_extensible(cells)
+    return None
+
+
+def is_extensible(cells):
+    (r1,c1) = cells[0]
+    (r2,c2) = cells[-1]
+    if r1 < r2 and c1 == c2:
+        # same column vertical
+        (dx,dy) = DIRECTIONS[1]
+        if r2 < ROWS-1 and board[r1+dy][c1] == 0:
+            return c1
+    elif r1 == r2 and c1 < c2:
+        # same row, so it's horizontal
+        (dx,dy) = DIRECTIONS[0]
+        if c1>0 and board[r1][c1-dx] == 0:
+            return c1-dx
+        elif c2<COLS-1 and board[r1][c2+dx]==0:
+            return c2+dx
+    elif r1 < r2 and c1 < c2:
+        #up to the right
+        (dx,dy) = DIRECTIONS[2]
+        if c1>0 and r1>0 and board[r1-dy][c1-dx]==0:
+            return c1-dx
+        if c2<COLS-1 and r2 < ROWS-1 and board[r2+dy][c2+dx]==0:
+            return c2+dx
+    elif r1 < r2 and c1 < c2:
+        # down to the right
+        (dx,dy) = DIRECTIONS[3]
+        if c2<COLS-1 and r2 >0 and board[r2+dy][c2-dx]==0:
+            return c2-dx
+        if c1>0 and r1<ROWS-1 and board[r1-dy][c1+dx]==0:
+            return c1+dx
+    else:
+        return None
+
+
 def board_full():
     return all(board[0][col] != 0 for col in range(COLS))
 
@@ -188,6 +240,25 @@ def choose_ai_column():
         board[row][col] = 0
         if win:
             return col
+
+    # extend open three
+    for col in columns:
+        row = get_available_row(col)
+        board[row][col] = 2
+        win = find_open_three(2)
+        board[row][col] = 0
+        if win:
+            return col
+
+    # Block open three
+    for col in columns:
+        row = get_available_row(col)
+        board[row][col] = 1
+        win = find_open_three(1)
+        board[row][col] = 0
+        if win:
+            return col
+
 
     center = COLS // 2
     if center in columns:
